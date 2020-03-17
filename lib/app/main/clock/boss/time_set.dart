@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
 import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/toast_util.dart';
 import 'package:myh_shop/widget/MyAppBar.dart';
 
 class TimeSet extends StatefulWidget {
-  List list;
+  final List list;
   TimeSet({@required this.list});
   @override
   _TimeSetState createState() => _TimeSetState();
@@ -30,7 +31,7 @@ class _TimeSetState extends State<TimeSet> {
           {'title':'星期五','isSet':widget.list.indexOf("5") != -1,'val':'5'},
           {'title':'星期六','isSet':widget.list.indexOf("6") != -1,'val':'6'},
           {'title':'星期日','isSet':widget.list.indexOf("7") != -1,'val':'7'},
-        ];
+        ]; 
       });
     });
   }
@@ -51,7 +52,7 @@ class _TimeSetState extends State<TimeSet> {
               }
               HttpService.post(Api.setWorkDays, context,
               params: {
-                'companyId':1,
+                'companyId':prefix0.userModel.loginData['sid'],
                 'workDays':param
               },showLoading: true
               ).then((val){

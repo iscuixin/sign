@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:myh_shop/app/main/clock/boss/apply_list.dart';
 import 'package:myh_shop/app/main/clock/employee/work_month.dart';
+import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
+import 'package:myh_shop/util/dialog_util.dart';
 import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/route_util.dart';
 import 'package:myh_shop/widget/MyAppBar.dart';
 import 'package:flutter_circular_chart/flutter_circular_chart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Statistics extends StatefulWidget {
   @override
@@ -27,41 +31,14 @@ class _StatisticsState extends State<Statistics> {
     return Scaffold(
       appBar: MyAppBar(
         title: Text('员工列表'),
-        // bottom: new PreferredSize(
-        //     child: Container(
-        //       height: 60,
-        //       padding: EdgeInsets.only(left:20,right: 20,bottom: 10),
-        //       color: Colors.white,
-        //       child: Row(
-        //         mainAxisAlignment: MainAxisAlignment.center,
-        //         children: <Widget>[
-        //           GestureDetector(
-        //             onTap: (){
-        //               // PageHelper.routePush(SearchEmployee());
-        //             },
-        //             child: Container(
-        //               height: 35,
-        //               width: 300,
-        //               decoration: BoxDecoration(
-        //                 color: Color.fromRGBO(0, 0, 0, 0.05),
-        //                 borderRadius: BorderRadius.circular(17.5),
-        //               ),
-        //               child: Row(
-        //                 mainAxisAlignment: MainAxisAlignment.center,
-        //                 children: <Widget>[
-        //                   Container(
-        //                     padding: EdgeInsets.only(bottom: 2),
-        //                     child: Text('输入员工姓名',style: TextStyle(color: Colors.black45,fontSize: 14)),
-        //                   )
-        //                 ],
-        //               ),
-        //             ),
-        //           )
-        //         ],
-        //       ),
-        //     ),
-        //   preferredSize: Size.fromHeight(60),
-        // ),
+        actions: <Widget>[
+          FlatButton(
+            onPressed: (){
+              routePush(ApplyList(prefix0.userModel.loginData['sid'].toString()));
+            },
+            child: Text('补卡申请',style: TextStyle(color: Colors.blue),),
+          )
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -115,15 +92,17 @@ class DayStatistics extends StatefulWidget {
   _DayStatisticsState createState() => _DayStatisticsState();
 }
 
-class _DayStatisticsState extends State<DayStatistics> {
+class _DayStatisticsState extends State<DayStatistics> with AutomaticKeepAliveClientMixin{
+  @override
+  bool get wantKeepAlive => true;
   DateTime dateTime = DateTime.now();
   List signList = [];
   List notSignList = [];
   int companyEmployCount = -1;
   bool isSign = true;
   Map roleList = {};
-  getData(){
-    HttpService.get(Api.getDayStatistics+'1', context,params: {'date':dateTime.toString().substring(0,19)}).then((res){
+  getData({bool show = true}){
+    HttpService.get(Api.getDayStatistics+prefix0.userModel.loginData['sid'].toString(), context,params: {'date':dateTime.toString().substring(0,19)}).then((res){
       setState(() {
         signList = res['data']['signList'];
         notSignList = res['data']['notSignList'];
@@ -132,8 +111,8 @@ class _DayStatisticsState extends State<DayStatistics> {
     });
   }
 
-  getRoleList(){
-    HttpService.get(Api.roleList, context).then((res){
+  getRoleList({bool show = true}){
+    HttpService.get(Api.roleList, context,showLoading: false).then((res){
       setState(() {
         roleList = res['data'];
       });
@@ -144,8 +123,8 @@ class _DayStatisticsState extends State<DayStatistics> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
-      getData();
-      getRoleList();
+      getData(show: false);
+      getRoleList(show: false);
     });
   }
   @override
@@ -357,15 +336,17 @@ class WeekStatistics extends StatefulWidget {
   _WeekStatisticsState createState() => _WeekStatisticsState();
 }
 
-class _WeekStatisticsState extends State<WeekStatistics> {
+class _WeekStatisticsState extends State<WeekStatistics> with AutomaticKeepAliveClientMixin{
+  @override
+  bool get wantKeepAlive => true;
   DateTime dateTime = DateTime.now();
   List signList = [];
   List notSignList = [];
   int companyEmployCount = -1;
   bool isSign = true;
   Map roleList = {};
-  getData(){
-    HttpService.get(Api.getWeekStatistics+'1', context,params: {'date':dateTime.toString().substring(0,19)}).then((res){
+  getData({bool show = true}){
+    HttpService.get(Api.getWeekStatistics+prefix0.userModel.loginData['sid'].toString(), context,params: {'date':dateTime.toString().substring(0,19)},showLoading: show).then((res){
       setState(() {
         signList = res['data']['signList'];
         notSignList = res['data']['notSignList'];
@@ -374,8 +355,8 @@ class _WeekStatisticsState extends State<WeekStatistics> {
     });
   }
 
-  getRoleList(){
-    HttpService.get(Api.roleList, context).then((res){
+  getRoleList({bool show = false}){
+    HttpService.get(Api.roleList, context,showLoading: show).then((res){
       setState(() {
         roleList = res['data'];
       });
@@ -591,7 +572,9 @@ class MonthStatistics extends StatefulWidget {
   _MonthStatisticsState createState() => _MonthStatisticsState();
 }
 
-class _MonthStatisticsState extends State<MonthStatistics> {
+class _MonthStatisticsState extends State<MonthStatistics> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   DateTime dateTime = DateTime.now();
   List signList = [];
   List notSignList = [];
@@ -599,7 +582,7 @@ class _MonthStatisticsState extends State<MonthStatistics> {
   bool isSign = true;
   Map roleList = {};
   getData(){
-    HttpService.get(Api.getMonthStatistics+'1', context,params: {'date':dateTime.toString().substring(0,19)}).then((res){
+    HttpService.get(Api.getMonthStatistics+prefix0.userModel.loginData['sid'].toString(), context,params: {'date':dateTime.toString().substring(0,19)}).then((res){
       setState(() {
         signList = res['data']['signList'];
         notSignList = res['data']['notSignList'];
@@ -609,7 +592,7 @@ class _MonthStatisticsState extends State<MonthStatistics> {
   }
 
   getRoleList(){
-    HttpService.get(Api.roleList, context).then((res){
+    HttpService.get(Api.roleList, context,showLoading: false).then((res){
       setState(() {
         roleList = res['data'];
       });
@@ -676,38 +659,61 @@ class _MonthStatisticsState extends State<MonthStatistics> {
             Positioned(
               top: 10,
               left: 10,
-              child:GestureDetector(
-                onTap: (){
-                  showDatePicker(
-                    context: context,
-                    initialDate: dateTime,
-                    firstDate: new DateTime.now().subtract(new Duration(days: 100)), // 减 30 天
-                    lastDate: new DateTime.now(),
-                    locale: Locale('zh'),
-                    builder: (context,child){
-                      return Theme(
-                        data: ThemeData(primaryTextTheme: TextTheme(subhead: TextStyle(fontSize: 0))),
-                        child: child,
-                      );
-                    }
-                ).then((res){
-                  if(res != null){
-                    setState(() {
-                      dateTime = res;
+              child:Container(
+                width: MediaQuery.of(context).size.width - 20,
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  GestureDetector(
+                    onTap: (){
+                      showDatePicker(
+                        context: context,
+                        initialDate: dateTime,
+                        firstDate: new DateTime.now().subtract(new Duration(days: 100)), // 减 30 天
+                        lastDate: new DateTime.now(),
+                        locale: Locale('zh'),
+                        builder: (context,child){
+                          return Theme(
+                            data: ThemeData(primaryTextTheme: TextTheme(subhead: TextStyle(fontSize: 0))),
+                            child: child,
+                          );
+                        }
+                    ).then((res){
+                      if(res != null){
+                        setState(() {
+                          dateTime = res;
+                        });
+                        getData();
+                      }
                     });
-                    getData();
-                  }
-                });
-                },
-                child: Container(
-                  color: Colors.transparent,
-                  child: Row(
-                    children:[
-                      Text(dateTime.toString().substring(0,10).replaceAll('-', '.'),style: TextStyle(color: Colors.blue,fontSize: 16)),
-                      Icon(Icons.keyboard_arrow_down,size: 14,color: Colors.blue,)
-                    ]
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      child: Row(
+                        children:[
+                          Text(dateTime.toString().substring(0,10).replaceAll('-', '.'),style: TextStyle(color: Colors.blue,fontSize: 16)),
+                          Icon(Icons.keyboard_arrow_down,size: 14,color: Colors.blue,)
+                        ]
+                      )
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: (){
+                      DialogUtil.showEnterDialog(context,content: "是否导出本月出勤表").then((res)async{
+                        if(res){
+                          String url = 'http://sign.myhkj.cn/excel/download/sign?companyId=${prefix0.userModel.loginData['sid'].toString()}&date=${dateTime.toString().substring(0,19)}';
+                            if (await canLaunch(url)) {
+                              await launch(url);
+                            } else {
+                              throw 'Could not launch $url';
+                            }
+                        }
+                      });
+                    },
+                    child: Text('导出出勤报表',style: TextStyle(color: Colors.black54,fontSize: 13,decoration: TextDecoration.underline),)
                   )
-                ),
+                ],
+              )
               )
             ),
             Positioned(

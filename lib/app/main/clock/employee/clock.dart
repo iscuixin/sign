@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:myh_shop/app/main/clock/boss/set_defaul_sign.dart';
+import 'package:myh_shop/app/main/clock/employee/apply_datail.dart';
+import 'package:myh_shop/app/main/clock/employee/apply_sign.dart';
 import 'package:myh_shop/app/main/clock/employee/summary.dart';
 import 'package:myh_shop/common.dart';
 import 'package:myh_shop/common.dart' as prefix0;
@@ -39,17 +42,44 @@ class _ClockState extends State<Clock> {
   DateTime datePicker = DateTime.now();
   int timeSectionStatus = 0;
   var wifi;
+  bool isSetDefault = false;
+  List employeeList = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
-      getInfo(dateNow);
-      getLocation();
-      getSignAddressInfo();
-      getSignInfo();
-      onTimeLoad();
-      getWifiSet();
+      if(widget.isBoss){
+        HttpService.get(Api.employeeList+prefix0.userModel.loginData['sid'].toString(), context,showLoading: false).then((res){
+          setState(() {
+            employeeList = res['data'];
+          });
+        });
+        HttpService.get(Api.companyInfo+prefix0.userModel.loginData['sid'].toString(), context,showLoading: false).then((res){
+          if(res['data']['signDefault'] != null){
+            HttpService.get(Api.employeeInfo+res['data']['signDefault'].toString(), context).then((val){
+              prefix0.userModel.defaulSignEmployee = val['data'];
+            });
+            prefix0.userModel.loginData['id'] = res['data']['signDefault'];
+            getInfo(dateNow);
+            getLocation();
+            getSignAddressInfo();
+            getSignInfo();
+            onTimeLoad();
+            getWifiSet();
+            setState(() {
+              isSetDefault = true;
+            });
+          }
+        });
+      }else{
+        getInfo(dateNow);
+        getLocation();
+        getSignAddressInfo();
+        getSignInfo();
+        onTimeLoad();
+        getWifiSet();
+      }
     });
   }
 
@@ -85,7 +115,80 @@ class _ClockState extends State<Clock> {
         ],
         bottom: _bottom(),
       ),
-      body: ScopedModel<UserModel>(
+      body: widget.isBoss && !isSetDefault?Column(
+        children: <Widget>[
+          Expanded(
+            child: Container(
+              alignment:Alignment.center,
+              child: Container(
+                child:Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children:[
+                    GestureDetector(
+                      onTap: (){
+                        if(employeeList.length == 0){
+                          ToastUtil.toast('当前暂无员工');
+                          return;
+                        }
+                        routePush(SetSignDefault(employeeList)).then((res){
+                          HttpService.get(Api.companyInfo+prefix0.userModel.loginData['sid'].toString(), context,showLoading: true).then((res){
+                            if(res['data']['signDefault'] != null){
+                              HttpService.get(Api.employeeInfo+res['data']['signDefault'].toString(), context).then((val){
+                                prefix0.userModel.defaulSignEmployee = val['data'];
+                              });
+                              prefix0.userModel.loginData['id'] = res['data']['signDefault'];
+                              getInfo(dateNow);
+                              getLocation();
+                              getSignAddressInfo();
+                              getSignInfo();
+                              onTimeLoad();
+                              getWifiSet();
+                              setState(() {
+                                isSetDefault = true;
+                              });
+                            }
+                          });
+                        });
+                      },
+                      child:Container(
+                        padding:EdgeInsets.only(left:10,right:10,top:10,bottom:10),
+                        decoration:BoxDecoration(
+                          border: Border.all(width:0.6,color:Colors.black26),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child:Text('设置默认考勤人员')
+                      )
+                    ),
+                    SizedBox(height:10),
+                    GestureDetector(
+                      child: Text('已经设置?点我刷新',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline)),
+                      onTap: (){
+                        HttpService.get(Api.companyInfo+prefix0.userModel.loginData['sid'].toString(), context,showLoading: true).then((res){
+                          if(res['data']['signDefault'] != null){
+                            HttpService.get(Api.employeeInfo+res['data']['signDefault'].toString(), context).then((val){
+                              prefix0.userModel.defaulSignEmployee = val['data'];
+                            });
+                            prefix0.userModel.loginData['id'] = res['data']['signDefault'];
+                            getInfo(dateNow);
+                            getLocation();
+                            getSignAddressInfo();
+                            getSignInfo();
+                            onTimeLoad();
+                            getWifiSet();
+                            setState(() {
+                              isSetDefault = true;
+                            });
+                          }
+                        });
+                      },
+                    )
+                  ]
+                )
+              )
+            )
+          )
+        ],
+      ): ScopedModel<UserModel>(
         model: userModel,
         child: ScopedModelDescendant<UserModel>(
           builder: (_,__,v){
@@ -94,9 +197,9 @@ class _ClockState extends State<Clock> {
               children: <Widget>[
                 Container(height: 10,color: bg,),
                 layoutWidget(titleBlue('上班打卡 ${daySignInfo['data']==null? info['upWork'].toString().substring(11,16):daySignInfo['data']['upTime'].toString().substring(11,16)}'), new Container(),180,15),
-                daySignInfo['data']!= null && daySignInfo['data']['morningStatus'] != 0? _morningSignInfo() :  _morningSign(),
+                daySignInfo['data']!= null && daySignInfo['data']['morningStatus'] != null && daySignInfo['data']['morningStatus'] != 0? _morningSignInfo() :  _morningSign(),
                 layoutWidget(titleBlue('下班打卡 ${daySignInfo['data']==null?info['downWork'].toString().substring(11,16) : daySignInfo['data']['downTime'].toString().substring(11,16)}'), new Container(),150,0),
-                daySignInfo['data'] == null ? Container():  daySignInfo['data']['afternoonSignTime'] != null ?  _afternoonSignInfo() :  _afternoonSign(),
+                daySignInfo['data'] == null || daySignInfo['data']['morningStatus'] == 0 ? Container():  daySignInfo['data']['afternoonSignTime'] != null ?  _afternoonSignInfo() :  _afternoonSign(),
               ],
             );
           },
@@ -122,7 +225,10 @@ class _ClockState extends State<Clock> {
               SizedBox(height:5),
               Row(
                 children: <Widget>[
-                  Text(
+                  data['morningApplyId'] != null && data['morningStatus'] == 2 ? Text('打卡成功',style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500
+                    )): Text(
                     '打卡时间${data['morningSignTime'].toString().substring(11,16)}'
                     ,style: TextStyle(
                       fontSize: 18,
@@ -153,16 +259,56 @@ class _ClockState extends State<Clock> {
                     ),
                     child:Text('外勤',style: TextStyle(color: Colors.green,fontSize: 12),)
                   ):Container(),
+                  data['morningApplyId'] != null && data['morningStatus'] == 2 ? Container(
+                    margin: EdgeInsets.only(left:10),
+                    padding: EdgeInsets.only(left:5,right:5),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color:Colors.green,
+                        width:1
+                      ),
+                      borderRadius: BorderRadius.circular(3)
+                    ),
+                    child:Text('补卡',style: TextStyle(color: Colors.green,fontSize: 12),)
+                  ):Container()
                 ],
               ),
               SizedBox(height:5),
-              Row(
+              data['morningApplyId'] != null && data['morningStatus'] == 2 ? GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['upWork'].toString():daySignInfo['data']['upTime'],0,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ): Row(
                 crossAxisAlignment: data['morningSignWifiName']!= null? CrossAxisAlignment.center : CrossAxisAlignment.start,
                 children: <Widget>[
                   Icon(data['morningSignWifiName'] != null?Icons.wifi :Icons.location_on,color: Colors.green,size: 18,),
                   Flexible(child: Text(data['morningSignWifiName']!= null? data['morningSignWifiName'] :data['morningSignAddress'],maxLines: 3,style: TextStyle(color: Colors.black45,fontSize: 12),overflow: TextOverflow.ellipsis))
                 ],
               ),
+              data['morningStatus'] != 2 ? SizedBox(height: 5):Container(),
+              data['morningStatus'] != 2 ? data['morningApplyId'] ==null? GestureDetector(
+                onTap: (){
+                  routePush(ApplySign(date,daySignInfo['data']==null? info['upWork'].toString():daySignInfo['data']['upTime'],0,userModel.loginData['id'])).then((res){
+                    getSignInfo(date: datePicker.toString().substring(0,19));
+                  });
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('申请补卡',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ):GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['upWork'].toString():daySignInfo['data']['upTime'],0,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ):Container()
             ]
           ),
         ),
@@ -190,7 +336,10 @@ class _ClockState extends State<Clock> {
               SizedBox(height:5),
               Row(
                 children: <Widget>[
-                  Text(
+                  data['afternoonApplyId'] != null && data['afternoonStatus'] == 2 ? Text('打卡成功',style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500
+                    )):Text(
                     '打卡时间${data['afternoonSignTime'].toString().substring(11,16)}'
                     ,style: TextStyle(
                       fontSize: 18,
@@ -221,16 +370,57 @@ class _ClockState extends State<Clock> {
                     ),
                     child:Text('外勤',style: TextStyle(color: Colors.green,fontSize: 12),)
                   ):Container(),
+                  data['afternoonApplyId'] != null && data['afternoonStatus'] == 2 ? Container(
+                    margin: EdgeInsets.only(left:10),
+                    padding: EdgeInsets.only(left:5,right:5),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color:Colors.green,
+                        width:1
+                      ),
+                      borderRadius: BorderRadius.circular(3)
+                    ),
+                    child:Text('补卡',style: TextStyle(color: Colors.green,fontSize: 12),)
+                  ):Container()
                 ],
               ),
               SizedBox(height:5),
-              Row(
+              SizedBox(height:5),
+              data['afternoonApplyId'] != null && data['afternoonStatus'] == 2 ? GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['downWork'].toString():daySignInfo['data']['downTime'],1,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ):Row(
                 crossAxisAlignment: data['eveningSignWifiName'] != null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
                 children: <Widget>[
                   Icon(data['eveningSignWifiName']!= null?Icons.wifi : Icons.location_on,color: Colors.green,size: 18,),
                   Flexible(child: Text(data['eveningSignWifiName']!= null?data['eveningSignWifiName'] : data['afternoonSignAddress']??'',maxLines: 3,style: TextStyle(color: Colors.black45,fontSize: 12),overflow: TextOverflow.ellipsis))
                 ],
               ),
+              data['afternoonStatus'] != 2 ? SizedBox(height: 5):Container(),
+              data['afternoonStatus'] != 2 ? data['afternoonApplyId'] ==null? GestureDetector(
+                onTap: (){
+                  routePush(ApplySign(date,daySignInfo['data']==null? info['downWork'].toString():daySignInfo['data']['downTime'],1,userModel.loginData['id'])).then((res){
+                    getSignInfo(date: datePicker.toString().substring(0,19));
+                  });
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('申请补卡',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ):GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['downWork'].toString():daySignInfo['data']['downTime'],1,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              ):Container()
             ]
           ),
         ),
@@ -289,7 +479,28 @@ class _ClockState extends State<Clock> {
             ),
           ]
         ),
-        timeSectionStatus == 1 ? Container():Positioned(
+        timeSectionStatus == 1 ? Positioned(
+          top: 160,
+          child: daySignInfo['data']['afternoonApplyId'] ==null? GestureDetector(
+            onTap: (){
+              routePush(ApplySign(date,daySignInfo['data']==null? info['downWork'].toString():daySignInfo['data']['downTime'],1,userModel.loginData['id'])).then((res){
+                getSignInfo(date: datePicker.toString().substring(0,19));
+              });
+            },
+            child:Container(
+              padding: EdgeInsets.only(left:5,right:5),
+              child: Text('申请补卡',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+            )
+          ):GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['downWork'].toString():daySignInfo['data']['downTime'],1,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              )
+        ):Positioned(
           top:160,
           child: Row(
             children: <Widget>[
@@ -297,7 +508,7 @@ class _ClockState extends State<Clock> {
               Text((distanceStatus == 0 || wifiStatus == 0)?'已经进入打卡考勤范围':'当前不在考勤范围' ,style: TextStyle(color: prefix0.textColor,fontSize: 13)),
               SizedBox(width: 5),
               GestureDetector(
-                onTap: ()=> getDistanceStatus(true),
+                onTap: ()=> getDistanceStatus(true,showToast: true),
                 child: Text('重新定位',style: TextStyle(color: Colors.blue,fontSize: 13)),
               )
             ],
@@ -359,7 +570,28 @@ class _ClockState extends State<Clock> {
             ),
           ]
         ),
-        timeSectionStatus == 1 ? Container():Positioned(
+        timeSectionStatus == 1 ? Positioned(
+          top: 160,
+          child: daySignInfo['data'] == null? GestureDetector(
+            onTap: (){
+              routePush(ApplySign(date,info['upWork'].toString(),0,userModel.loginData['id'])).then((res){
+                getSignInfo(date: datePicker.toString().substring(0,19));
+              });
+            },
+            child:Container(
+              padding: EdgeInsets.only(left:5,right:5),
+              child: Text('申请补卡',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+            )
+          ):GestureDetector(
+                onTap: (){
+                  routePush(ApplyDetail(date,daySignInfo['data']==null? info['upWork'].toString():daySignInfo['data']['upTime'],0,userModel.loginData['id']));
+                },
+                child:Container(
+                  padding: EdgeInsets.only(left:5,right:5),
+                  child: Text('查看补卡记录',style: TextStyle(color: Colors.blue,fontSize: 13,decoration: TextDecoration.underline))
+                )
+              )
+        ):Positioned(
           top:160,
           child: Row(
             children: <Widget>[
@@ -367,7 +599,7 @@ class _ClockState extends State<Clock> {
               Text((distanceStatus == 0 || wifiStatus == 0)?'已经进入打卡考勤范围':'当前不在考勤范围' ,style: TextStyle(color: prefix0.textColor,fontSize: 13)),
               SizedBox(width: 5),
               GestureDetector(
-                onTap: ()=> getDistanceStatus(true),
+                onTap: ()=> getDistanceStatus(true,showToast: true),
                 child: Text('重新定位',style: TextStyle(color: Colors.blue,fontSize: 13)),
               )
             ],
@@ -502,7 +734,8 @@ class _ClockState extends State<Clock> {
   /*--------------------------------------------*/
 
   void getInfo(DateTime time){
-    HttpService.get(Api.getEmployeeInfo+'1', context,params: {'date':time.toString().substring(0,19)}).then((res){
+    print('id------->'+userModel.loginData['id'].toString());
+    HttpService.get(Api.getEmployeeInfo+userModel.loginData['id'].toString(), context,params: {'date':time.toString().substring(0,19)},showLoading: false).then((res){
       setState(() {
         info = res['data'];
       });
@@ -515,7 +748,7 @@ class _ClockState extends State<Clock> {
       return;
     }
     HttpService.post(Api.sign, context,params: {
-      'employeeId':1,
+      'employeeId':userModel.loginData['id'],
       'longitude': lng,
       'latitude': lat,
       'signAddress': address,
@@ -530,19 +763,20 @@ class _ClockState extends State<Clock> {
   }
 
   void getSignAddressInfo(){
-     HttpService.get(Api.getSignAddressInfo+"1", context,showLoading: false).then((res){
-       setState(() {
-         latSet = res['data']['latitude'];
-         lngSet = res['data']['longitude'];
-         distanceSet = double.parse(res['data']['maxDistance'].toString());
-       });
-       getDistance();
+     HttpService.get(Api.getSignAddressInfo+userModel.loginData['id'].toString(), context,showLoading: false).then((res){
+       if(res['data'] != null){
+         setState(() {
+          latSet = res['data']['latitude'];
+          lngSet = res['data']['longitude'];
+          distanceSet = double.parse(res['data']['maxDistance'].toString());
+        });
+        getDistance();
+       }
      });
   }
 
   void getSignInfo({String date}){
-    HttpService.get(Api.getDaySignInfo+"1", context,params: {'date': date ?? DateTime.now().toString().substring(0,19)}).then((res){
-      print(res.toString());
+    HttpService.get(Api.getDaySignInfo+userModel.loginData['id'].toString(), context,params: {'date': date ?? DateTime.now().toString().substring(0,19)},showLoading: false).then((res){
       setState(() {
         daySignInfo = res;
       });
@@ -650,21 +884,25 @@ class _ClockState extends State<Clock> {
     }); 
   }
 
-  void getDistanceStatus(bool showLocading){
+  void getDistanceStatus(bool showLoading,{showToast = false}){
     HttpService.get(Api.distanceJudge, context,params: {
       'longitude':lng,
       'latitude' :lat,
       'longitudeSet':lngSet,
       'latitudeSet':latSet,
-      'distanceSet':distanceSet},showLoading: showLocading).then((res){
+      'distanceSet':distanceSet},showLoading: showLoading).then((res){
       setState(() {
         distanceStatus = res['data'];
+        print(res.toString()+'-------');
       });
+      if(showToast){
+        ToastUtil.toast('重新定位成功');
+      }
     });
   }
 
   getWifiSet(){
-    HttpService.get(Api.wifiSet+'1', context).then((res){
+    HttpService.get(Api.wifiSet+userModel.loginData['id'].toString(), context,showLoading: false).then((res){
       setState(() {
         wifi = res['data'];
       });

@@ -14,10 +14,19 @@ class Api{
   static String workDays = 'workDays/';
   static String setWorkDays = 'workDays/set/default';
   static String signAddress = 'signAddress/';
+  static String saveAddress = 'signAddress/create';
   static String wifiSet = 'wifiSet/';
+  static String wifiSave = 'wifiSet/create';
   static String employeeList = 'company/employee/list/';
   static String arrangeSet = 'arrange/set';
   static String arrangeInfo = 'arrange/';
   static String arrangeMonth = 'arrange//month/';
   static String arrangeDetail = 'arrange/detail/';
+  static String applySign = 'signApply/apply';
+  static String applyDetail = 'signApply/detail/';
+  static String applyList = 'signApply/';
+  static String checkApply = 'signApply/check/';
+  static String companyInfo = 'company/';
+  static String setDefaulSign = 'company/set/defaultSign/';
+  static String employeeInfo = 'employee/';
 }

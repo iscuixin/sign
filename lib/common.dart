@@ -309,8 +309,8 @@ Future<bool> del(key) async {
   return await prefs.remove(key);
 }
 
-dynamic post(String m, {Map<String, dynamic> data, int t = 0}) async {
-  dio.options.baseUrl = ym;
+dynamic post(String m, {Map<String, dynamic> data, int t = 0,bool isF = false,bool isFormData = false}) async {
+  dio.options.baseUrl = isF?'http://www.520mpw.com/':ym;
   if (m == 'login') {
     dio.options.queryParameters = {'source': 'myh_app'};
   } else {
@@ -326,7 +326,7 @@ dynamic post(String m, {Map<String, dynamic> data, int t = 0}) async {
   print(rs.data);
   return null;*/
   try {
-    Response rs = await dio.post(methods[m], data: data);
+    Response rs = await dio.post(methods[m], data: isFormData?FormData.from(data): data);
     var jg = rs.data;
     if (jg is String) {
       jg = formData(rs.data);

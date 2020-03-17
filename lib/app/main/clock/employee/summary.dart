@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:myh_shop/app/main/clock/employee/apply_datail.dart';
+import 'package:myh_shop/app/main/clock/employee/apply_sign.dart';
 import 'package:myh_shop/app/main/clock/employee/work_month.dart';
 
 import 'package:myh_shop/common.dart';
@@ -31,7 +33,7 @@ class _ClockSummaryState extends State<ClockSummary> {
     });
   }
   void getData(){
-    HttpService.get(Api.getMonthSummary+'1', context).then((res){
+    HttpService.get(Api.getMonthSummary+userModel.loginData['id'].toString(), context).then((res){
       if(res['data'] != null){
         setState(() {
           data = res['data'];
@@ -79,7 +81,7 @@ class _ClockSummaryState extends State<ClockSummary> {
                 ),
                 GestureDetector(
                   onTap: (){
-                    routePush(WorkMonth());
+                    routePush(WorkMonth(id: userModel.loginData['id']));
                   },
                   child: Container(
                     color: Colors.transparent,
@@ -170,7 +172,18 @@ class _ClockSummaryState extends State<ClockSummary> {
                               Text('上班迟到${getLateTime(res['lateTime'])}',style: TextStyle(color: Colors.black38,fontSize: 12),)
                             ],
                           ),
-                          Text('去处理',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          GestureDetector(
+                            onTap: (){
+                              if(res['morningApplyId']==null){
+                                routePush(ApplySign(res['signDate'].toString()+' ',res['upTime'],0,userModel.loginData['id'])).then((res){
+                                  getData();
+                                });
+                              }else{
+                                routePush(ApplyDetail(res['signDate'].toString()+' ',res['upTime'],0,userModel.loginData['id']));
+                              }
+                            },
+                            child:Text( res['morningApplyId']==null? '去处理' : '处理中',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          )
                         ]
                       ),
                     ),line
@@ -200,7 +213,18 @@ class _ClockSummaryState extends State<ClockSummary> {
                               Text('下班早退${getLateTime(res['leaveEarlyTime'])}',style: TextStyle(color: Colors.black38,fontSize: 12),)
                             ],
                           ),
-                          Text('去处理',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          GestureDetector(
+                            onTap:(){
+                              if(res['afternoonApplyId']==null){
+                                routePush(ApplySign(res['signDate'].toString()+' ',res['downTime'],1,userModel.loginData['id'])).then((res){
+                                  getData();
+                                });
+                              }else{
+                                routePush(ApplyDetail(res['signDate'].toString()+' ',res['downTime'],1,userModel.loginData['id']));
+                              }
+                            },
+                            child:Text(res['afternoonApplyId']==null?'去处理' : '处理中',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          )
                         ]
                       ),
                     ),line
@@ -230,7 +254,28 @@ class _ClockSummaryState extends State<ClockSummary> {
                               Text(res['morningStatus'] == 0?'上班缺卡':'下班缺卡',style: TextStyle(color: Colors.black38,fontSize: 12),)
                             ],
                           ),
-                          Text('去处理',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          GestureDetector(
+                            onTap:(){
+                              if(res['morningStatus'] == 0){
+                                if(res['morningApplyId']==null){
+                                  routePush(ApplySign(res['signDate'].toString()+' ',res['upTime'],0,userModel.loginData['id'])).then((res){
+                                    getData();
+                                  });
+                                }else{
+                                  routePush(ApplyDetail(res['signDate'].toString()+' ',res['upTime'],0,userModel.loginData['id']));
+                                }
+                              }else{
+                                if(res['afternoonApplyId']==null){
+                                  routePush(ApplySign(res['signDate'].toString()+' ',res['downTime'],1,userModel.loginData['id'])).then((res){
+                                    getData();
+                                  });
+                                }else{
+                                  routePush(ApplyDetail(res['signDate'].toString()+' ',res['downTime'],1,1));
+                                }
+                              }
+                            },
+                            child:Text((res['morningStatus'] == 0 ?(res['morningApplyId']==null):(res['afternoonApplyId']==null))?'去处理':'处理中',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          )
                         ]
                       ),
                     ),line
@@ -259,7 +304,14 @@ class _ClockSummaryState extends State<ClockSummary> {
                               Text(res.toString()+'(${getWeekDay(DateTime.parse(res.toString()+' 00:00:00'))})',style: TextStyle(fontSize: 16)),
                             ],
                           ),
-                          Text('去处理',style: TextStyle(color: Colors.blue,fontSize: 16))
+                          GestureDetector(
+                            onTap: (){
+                              routePush(ApplySign(res.toString()+' ','2000-02-03 09:00:00',0,userModel.loginData['id'])).then((res){
+                                getData();
+                              });
+                            },
+                            child: Text('去处理',style: TextStyle(color: Colors.blue,fontSize: 16)),
+                          )
                         ]
                       ),
                     ),line

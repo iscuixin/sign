@@ -11,7 +11,7 @@ import 'package:date_utils/date_utils.dart' as date;
 class WorkMonth extends StatefulWidget {
   bool isBoss;
   int id;
-  WorkMonth({this.isBoss = false,this.id});
+  WorkMonth({this.isBoss = false,@required this.id});
   @override
   _WorkMonthState createState() => _WorkMonthState();
 }
@@ -28,14 +28,15 @@ class _WorkMonthState extends State<WorkMonth> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
-      HttpService.get(Api.getEmployeeDaySign+'${widget.id??"1"}',context ,params: {'date':DateTime.now().toString().substring(0,19)}).then((res){
+      HttpService.get(Api.getEmployeeDaySign+widget.id.toString(),context ,params: {'date':DateTime.now().toString().substring(0,19)}).then((res){
+        print(res.toString());
         if(res['data'] != null){
           setState(() {
             data = res['data'];
           });
         }
       });
-      HttpService.get(Api.getEmployeeMonthSign+'${widget.id??"1"}',context ,params: {'date':DateTime.now().toString().substring(0,19)},showLoading: false).then((res){
+      HttpService.get(Api.getEmployeeMonthSign+widget.id.toString(),context ,params: {'date':DateTime.now().toString().substring(0,19)},showLoading: false).then((res){
         if(res['data'] != null){
           setState(() {
             dataMap = res['data'];
@@ -47,7 +48,7 @@ class _WorkMonthState extends State<WorkMonth> {
   }
 
   void getInfo(DateTime day){
-    HttpService.get(Api.getEmployeeInfo+'${widget.id??"1"}', context,params: {
+    HttpService.get(Api.getEmployeeInfo+widget.id.toString(), context,params: {
       'date':day.toString().substring(0,19)
     }).then((res){
       setState(() {
@@ -160,14 +161,14 @@ class _WorkMonthState extends State<WorkMonth> {
         lastDate: lastController,
         initialCalendarDateOverride: DateTime.now(),
         onSelectedRangeChange: (date){
-          HttpService.get(Api.getEmployeeDaySign+'${widget.id??"1"}',context ,params: {'date':date.item1.toString().substring(0,19)}).then((res){
+          HttpService.get(Api.getEmployeeDaySign+widget.id.toString(),context ,params: {'date':date.item1.toString().substring(0,19)}).then((res){
             if(res['data'] != null){
               setState(() {
                 data = res['data'];
               });
             }
           });
-          HttpService.get(Api.getEmployeeMonthSign+'${widget.id??"1"}',context ,params: {'date':date.item1.toString().substring(0,19)},showLoading: false).then((res){
+          HttpService.get(Api.getEmployeeMonthSign+widget.id.toString(),context ,params: {'date':date.item1.toString().substring(0,19)},showLoading: false).then((res){
             if(res['data'] != null){
               setState(() {
                 dataMap = res['data'];
@@ -189,7 +190,7 @@ class _WorkMonthState extends State<WorkMonth> {
                 dt = day.toString();
                 this.status = status;
               });
-              HttpService.get(Api.getEmployeeDaySign+'${widget.id??"1"}', context ,params: {'date':day.toString().replaceAll('.000', '')},showLoading: true).then((res){
+              HttpService.get(Api.getEmployeeDaySign+widget.id.toString(), context ,params: {'date':day.toString().replaceAll('.000', '')},showLoading: true).then((res){
                 if(res['data'] != null){
                   setState(() {
                     data = res['data'];
@@ -296,7 +297,7 @@ class _WorkMonthState extends State<WorkMonth> {
             child:Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children:[
-                data != null? Row(
+                data != null && data['morningStatus'] != 0? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
@@ -304,13 +305,13 @@ class _WorkMonthState extends State<WorkMonth> {
                     ),
                     Icon(Icons.location_on,color:Colors.green),
                     SizedBox(width: 10),
-                    Flexible(child: Text(data['morningSignAddress']??'',style:TextStyle(color:Colors.black54,fontSize: 12),maxLines: 2,overflow: TextOverflow.ellipsis))
+                    Flexible(child: Text( data['morningApplyId'] != null && data['morningStatus'] == 2? '补卡' :data['morningSignAddress'],style:TextStyle(color:Colors.black54,fontSize: 12),maxLines: 2,overflow: TextOverflow.ellipsis))
                   ],  
                 ) : Container(),
                 SizedBox(height:5),
                 Row(
                   children:[
-                    data != null?Container(
+                     data != null && data['morningStatus'] != 0?Container(
                       width: 60,
                     ):Container(width: 25),
                     Container(
@@ -364,10 +365,10 @@ class _WorkMonthState extends State<WorkMonth> {
                     Container(
                       width: 25,
                     ),
-                    Icon(Icons.location_on,color:Colors.blue),
+                    Icon(Icons.location_on,color:Colors.green),
                     SizedBox(width: 10),
                     Flexible(
-                      child: Text(data['afternoonSignAddress'],style:TextStyle(color:Colors.black54,fontSize: 12),maxLines: 2,overflow: TextOverflow.ellipsis),
+                      child: Text(data['afternoonApplyId'] != null && data['afternoonStatus'] == 2? '补卡':data['afternoonSignAddress'],style:TextStyle(color:Colors.black54,fontSize: 12),maxLines: 2,overflow: TextOverflow.ellipsis),
                     )
                   ],  
                 ):Container(),

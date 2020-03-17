@@ -32,6 +32,8 @@ dependencies:
   flutter_circular_chart: ^0.1.0
   amap_location: ^0.2.0
   permission_handler: ^4.0.0
+  flutter_luban: ^0.1.11
+  image_picker: ^0.6.1+10
   # ui组件
   # flui: any
   # toast

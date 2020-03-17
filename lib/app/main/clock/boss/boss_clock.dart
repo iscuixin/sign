@@ -3,6 +3,9 @@ import 'package:myh_shop/app/main/clock/boss/arrange.dart';
 import 'package:myh_shop/app/main/clock/boss/setting.dart';
 import 'package:myh_shop/app/main/clock/boss/statistics.dart';
 import 'package:myh_shop/app/main/clock/employee/clock.dart';
+import 'package:myh_shop/common.dart';
+import 'package:myh_shop/util/api.dart';
+import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/intel_util.dart';
 
 class BossClock extends StatefulWidget {
@@ -88,5 +91,20 @@ class _BossClockState extends State<BossClock> {
         children: tabBodies
       )
     );
+  }
+}
+
+class CompanyInfo{
+  static void getInfo(BuildContext context){
+    if(userModel.loginData['id'] == null){
+      HttpService.get(Api.companyInfo+userModel.loginData['sid'].toString(), context,showLoading: false).then((res){
+    
+        if(res['data']['signDefault'] != null){
+          userModel.loginData['id'] = res['data']['signDefault'];
+        }else{
+          userModel.loginData['id'] = null;
+        }
+      });
+    }
   }
 }

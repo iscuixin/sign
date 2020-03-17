@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
 import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/intel_util.dart';
@@ -11,7 +12,9 @@ import 'package:myh_shop/widget/MyAppBar.dart';
 class WIFISet extends StatefulWidget {
   String wifiName;
   String wifiCode;
-  WIFISet({this.wifiName,this.wifiCode});
+  int id;
+  bool isSet;
+  WIFISet({this.wifiName,this.wifiCode,this.id,this.isSet = false});
   @override
   _WIFISetState createState() => _WIFISetState();
 }
@@ -52,7 +55,26 @@ class _WIFISetState extends State<WIFISet> {
         actions: <Widget>[
           FlatButton(
             onPressed: (){
-              HttpService.patch(Api.wifiSet+'1', context,
+              if(data == null){
+                ToastUtil.toast('请选择WIFI');
+                return;
+              }
+              if(widget.isSet){
+                HttpService.post(Api.wifiSave, context,params: {
+                  'wifiName': data['wifiname'],
+                  'wifiOnlyCode': data['ssid'],
+                  'companyId':prefix0.userModel.loginData['sid']
+                },showLoading: true).then((val){
+                  var res = json.decode(val.toString());
+                  if(res['data']){
+                    ToastUtil.toast('保存成功');
+                    Navigator.pop(context);
+                  }else{
+                    ToastUtil.toast('保存失败,请稍后再试');
+                  }
+                });
+              }else{
+                HttpService.patch(Api.wifiSet+widget.id.toString(), context,
                 params: {
                   'wifiName': data['wifiname'],
                   'wifiOnlyCode': data['ssid']
@@ -61,10 +83,12 @@ class _WIFISetState extends State<WIFISet> {
                   var res = json.decode(val.toString());
                   if(res['data']){
                     ToastUtil.toast('保存成功');
+                    Navigator.pop(context);
                   }else{
                     ToastUtil.toast('保存失败,请稍后再试');
                   }
                 });
+              }
             }, 
             child: Text('保存',style: TextStyle(color: Colors.blue))
           )
@@ -72,7 +96,7 @@ class _WIFISetState extends State<WIFISet> {
       ),
       body: Column(
         children: <Widget>[
-          Container(
+          widget.isSet ? Container() : Container(
             padding: EdgeInsets.only(left:20,right:20,top:15,bottom:15),
             color: Colors.white,
             child:Row(

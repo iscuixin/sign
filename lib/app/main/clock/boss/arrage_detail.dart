@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:myh_shop/app/main/clock/boss/arrange_type.dart';
+import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
+import 'package:myh_shop/util/dialog_util.dart';
 import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/route_util.dart';
 import 'package:myh_shop/widget/MyAppBar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ArrageDetail extends StatefulWidget {
   final DateTime dateTime;
   final List typeList;
   final List employeeList;
-  ArrageDetail(this.dateTime,this.typeList,this.employeeList);
+  final int companyId;
+  ArrageDetail(this.dateTime,this.typeList,this.employeeList,this.companyId);
   @override
   _ArrageDetailState createState() => _ArrageDetailState();
 }
@@ -17,7 +21,7 @@ class ArrageDetail extends StatefulWidget {
 class _ArrageDetailState extends State<ArrageDetail> {
   var data;
   getDetail(DateTime date){
-    HttpService.get(Api.arrangeDetail+'1', context,params: {
+    HttpService.get(Api.arrangeDetail+ widget.companyId.toString(), context,params: {
       'date':date.toString().substring(0,19)
     }).then((res){
       setState(() {
@@ -39,6 +43,23 @@ class _ArrageDetailState extends State<ArrageDetail> {
       appBar: MyAppBar(
         elevation: 1,
         title: Text('${widget.dateTime.month.toString()}月排班详情'),
+        actions: <Widget>[
+          FlatButton(
+            onPressed: (){
+              DialogUtil.showEnterDialog(context,content: "是否导出排班表").then((res)async{
+                if(res){
+                  String url = 'http://sign.myhkj.cn/excel/download/arrange?companyId=${widget.companyId}&date=${widget.dateTime.toString().substring(0,19)}';
+                    if (await canLaunch(url)) {
+                      await launch(url);
+                    } else {
+                      throw 'Could not launch $url';
+                    }
+                }
+              });
+            },
+            child: Text('导出表格',style: TextStyle(color: Colors.blue)),
+          )
+        ],
       ),
       body: data != null ? dataList():Container(),
     );
@@ -86,7 +107,7 @@ class _ArrageDetailState extends State<ArrageDetail> {
         children: <Widget>[
           GestureDetector(
             onTap: (){
-              routePush(ArrangeType(widget.typeList,widget.employeeList,[DateTime.parse(k.toString()+" 00:00:00"),DateTime.parse(k.toString()+" 00:00:00")])).then((res){
+              routePush(ArrangeType(widget.typeList,widget.employeeList,[DateTime.parse(k.toString()+" 00:00:00"),DateTime.parse(k.toString()+" 00:00:00")],prefix0.userModel.loginData['sid'])).then((res){
                 getDetail(widget.dateTime);
               });
             },

@@ -18,7 +18,7 @@ class _DistanceState extends State<Distance> {
   int index = 0;
 
   List list = [
-    100,200,300,400,500,600,700,800,900,1000
+    50,100,200,300,400,500
   ];
 
   @override
@@ -40,7 +40,7 @@ class _DistanceState extends State<Distance> {
         actions: <Widget>[
           FlatButton(
             onPressed: (){
-              HttpService.patch(Api.signAddress+'1', context,
+              HttpService.patch(Api.signAddress+widget.id.toString(), context,
               params: {
                 'maxDistance':(index + 1) * 100
               },showLoading: true
@@ -48,6 +48,7 @@ class _DistanceState extends State<Distance> {
                 var res = json.decode(val.toString());
                 if(res['data']){
                   ToastUtil.toast('保存成功');
+                  Navigator.pop(context);
                 }else{
                   ToastUtil.toast('保存失败,请稍后再试');
                 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_calendar/flutter_calendar.dart';
 import 'package:myh_shop/app/main/clock/boss/arrage_detail.dart';
 import 'package:myh_shop/app/main/clock/boss/arrange_type.dart';
+import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
 import 'package:myh_shop/util/dialog_util.dart';
 import 'package:myh_shop/util/http_service.dart';
@@ -35,18 +36,18 @@ class _ArrangeState extends State<Arrange> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
-      HttpService.get(Api.employeeList+'1', context).then((res){
+      HttpService.get(Api.employeeList+prefix0.userModel.loginData['sid'].toString(), context,showLoading: false).then((res){
         setState(() {
           employeeList = res['data'];
         });
       });
-      getArrangeInfo(DateTime.parse(dt));
+      getArrangeInfo(DateTime.parse(dt),show: false);
       getMonthArrange(DateTime.parse(dt));
     });
   }
 
   getMonthArrange(DateTime month){
-    HttpService.get(Api.arrangeMonth+'1', context,params: {
+    HttpService.get(Api.arrangeMonth+prefix0.userModel.loginData['sid'].toString(), context,params: {
       'arrangeDate':month.toString().substring(0,19)
     },showLoading: false).then((res){
       setState(() {
@@ -59,7 +60,7 @@ class _ArrangeState extends State<Arrange> {
     return Scaffold(
       appBar:MyAppBar(
         elevation: 1,
-        title: Text('选择排班日期'),
+        title: Text('排班'),
         actions: <Widget>[
           FlatButton(onPressed: (){
             List list = [];
@@ -70,7 +71,7 @@ class _ArrangeState extends State<Arrange> {
               ToastUtil.toast('当前暂无员工');
               return;
             }
-            routePush(ArrageDetail(DateTime.parse(dt),list,employeeList));
+            routePush(ArrageDetail(DateTime.parse(dt),list,employeeList,prefix0.userModel.loginData['sid']));
           }, child: Text('详情',style: TextStyle(color: Colors.blue),))
         ],
       ),
@@ -108,7 +109,7 @@ class _ArrangeState extends State<Arrange> {
                             ToastUtil.toast('当前暂无员工');
                             return;
                           }
-                          routePush(ArrangeType(list,employeeList,days,isSection: true)).then((res){
+                          routePush(ArrangeType(list,employeeList,days,prefix0.userModel.loginData['sid'],isSection: true)).then((res){
                             getArrangeInfo(DateTime.parse(dt));
                             getMonthArrange(DateTime.parse(dt));
                           });
@@ -123,7 +124,7 @@ class _ArrangeState extends State<Arrange> {
                         ToastUtil.toast('当前暂无员工');
                         return;
                       }
-                      routePush(ArrangeType(list,employeeList,days,isSection: true)).then((res){
+                      routePush(ArrangeType(list,employeeList,days,prefix0.userModel.loginData['sid'],isSection: true)).then((res){
                         getArrangeInfo(DateTime.parse(dt));
                         getMonthArrange(DateTime.parse(dt));
                       });
@@ -152,7 +153,7 @@ class _ArrangeState extends State<Arrange> {
                       ToastUtil.toast('当前暂无员工');
                       return;
                     }
-                    routePush(ArrangeType(list,employeeList,[DateTime.parse(dt),DateTime.parse(dt)])).then((res){
+                    routePush(ArrangeType(list,employeeList,[DateTime.parse(dt),DateTime.parse(dt)],prefix0.userModel.loginData['sid'])).then((res){
                       getArrangeInfo(DateTime.parse(dt));
                       getMonthArrange(DateTime.parse(dt));
                     });
@@ -278,8 +279,8 @@ class _ArrangeState extends State<Arrange> {
     getArrangeInfo(day);
   }
 
-  getArrangeInfo(DateTime day){
-    HttpService.get(Api.arrangeInfo+'1', context,params: {'signDate':day.toString().substring(0,19)}).then((res){
+  getArrangeInfo(DateTime day,{bool show = true}){
+    HttpService.get(Api.arrangeInfo+prefix0.userModel.loginData['sid'].toString(), context,params: {'signDate':day.toString().substring(0,19)},showLoading: show).then((res){
       var data = res['data'];
       if(data['1'].length != 0 || data['2'].length != 0 || data['3'].length != 0 || data['0'].length != 0){
         setState(() {
@@ -319,7 +320,7 @@ class _ArrangeState extends State<Arrange> {
                   ToastUtil.toast('当前暂无员工');
                   return;
                 }
-                routePush(ArrangeType(list,employeeList,[DateTime.parse(dt),DateTime.parse(dt)])).then((res){
+                routePush(ArrangeType(list,employeeList,[DateTime.parse(dt),DateTime.parse(dt)],prefix0.userModel.loginData['sid'])).then((res){
                   getArrangeInfo(DateTime.parse(dt));
                   getMonthArrange(DateTime.parse(dt));
                 });

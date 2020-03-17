@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:myh_shop/app/main/clock/boss/boss_clock.dart';
 import 'package:myh_shop/app/main/come_shop.dart';
 import 'package:myh_shop/app/main/count.dart';
 import 'package:myh_shop/app/main/goods.dart';
@@ -20,6 +21,9 @@ class _BottomBarState extends State<BottomBar> {
   void initState() {
     super.initState();
     myContext = context;
+     WidgetsBinding.instance.addPostFrameCallback((_){
+      CompanyInfo.getInfo(context);
+    });
   }
   @override
   Widget build(BuildContext context) {

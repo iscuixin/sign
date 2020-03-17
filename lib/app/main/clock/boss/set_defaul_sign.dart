@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:myh_shop/common.dart' as prefix0;
 import 'package:myh_shop/util/api.dart';
@@ -5,19 +7,20 @@ import 'package:myh_shop/util/http_service.dart';
 import 'package:myh_shop/util/toast_util.dart';
 import 'package:myh_shop/widget/MyAppBar.dart';
 
-class SelectEmploy extends StatefulWidget {
+class SetSignDefault extends StatefulWidget {
 
   List list;
 
-  List select;
+  Map employee;
 
-  SelectEmploy(this.list,this.select);
+  SetSignDefault(this.list,{this.employee});
   @override
   _SelectEmployState createState() => _SelectEmployState();
 }
 
-class _SelectEmployState extends State<SelectEmploy> {
+class _SelectEmployState extends State<SetSignDefault> {
   var role = {};
+  int id = -1;
   getRoleList(){
     HttpService.get(Api.roleList, context).then((res){
       setState(() {
@@ -30,6 +33,11 @@ class _SelectEmployState extends State<SelectEmploy> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
       getRoleList();
+      if(widget.employee != null){
+        setState(() {
+          id = widget.employee['id'];
+        });
+      }
     });
   }
   
@@ -42,7 +50,22 @@ class _SelectEmployState extends State<SelectEmploy> {
         actions: <Widget>[
           FlatButton(
             onPressed: (){
-                Navigator.pop(context,widget.select);
+              if(id == -1){
+                ToastUtil.toast('请选择员工');
+                return;
+              }
+              HttpService.put(Api.setDefaulSign+prefix0.userModel.loginData['sid'].toString(), context,params: {
+                'signDefault':id
+              },showLoading: true).then((val){
+                var res = json.decode(val.toString());
+                if(res['data']){
+                  ToastUtil.toast('保存成功');
+                  prefix0.userModel.loginData['id'] = id;
+                  Navigator.pop(context);
+                }else{
+                  ToastUtil.toast('保存失败');
+                }
+              });
             },
             child: Text('确定',style: TextStyle(color: Colors.blue)),
           )
@@ -55,24 +78,9 @@ class _SelectEmployState extends State<SelectEmploy> {
         children: widget.list.map((res){
           return GestureDetector(
             onTap: (){
-              if(!check(widget.select,res)){
-                setState(() {
-                  widget.select.add(res);
-                });
-              }else{
-                List list = [];
-                for(var y in widget.select){
-                  list.add(y);
-                }
-                for(var x in list){
-                  if(x['id'] == res['id']){
-                     setState(() {
-                       widget.select.remove(x);
-                    });
-                  }
-                } 
-               
-              }
+              setState(() {
+                id = res['id'];
+              });
             },
             child:Container(
               margin: EdgeInsets.only(bottom:1),
@@ -105,8 +113,8 @@ class _SelectEmployState extends State<SelectEmploy> {
                     ],
                   ),
                   Icon(
-                    check(widget.select,res) ? Icons.check_circle:Icons.check_circle_outline,
-                    color:check(widget.select,res) ? Colors.blue:Colors.black26,
+                    res['id'] == id? Icons.check_circle:Icons.check_circle_outline,
+                    color: res['id'] == id ? Colors.blue:Colors.black26,
                     size: 18,
                   )
                 ],
@@ -118,13 +126,4 @@ class _SelectEmployState extends State<SelectEmploy> {
     );
   }
 
-  bool check(List list,var data){
-    bool res = false;
-    for(var v in list){
-      if(v['id'] == data['id']){
-        res = true;
-      }
-    }
-    return res;
-  }
 }

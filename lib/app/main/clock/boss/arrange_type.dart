@@ -15,8 +15,9 @@ class ArrangeType extends StatefulWidget {
   final List typeList;
   final List employeeList;
   final List dateTimes;
+  final int companyId;
   final bool isSection;
-  ArrangeType(this.typeList,this.employeeList,this.dateTimes,{this.isSection = false});
+  ArrangeType(this.typeList,this.employeeList,this.dateTimes,this.companyId,{this.isSection = false});
   @override
   _ArrangeTypeState createState() => _ArrangeTypeState();
 }
@@ -28,6 +29,8 @@ class _ArrangeTypeState extends State<ArrangeType> {
   List minuteData = [];
 
   Map employeeArrange = {};
+
+  Map employeeArrange2 = {};
 
   @override
   void initState() {
@@ -52,6 +55,10 @@ class _ArrangeTypeState extends State<ArrangeType> {
           employeeArrange['中班'] = [];
           employeeArrange['晚班'] = [];
           employeeArrange['通班'] = [];
+          employeeArrange2['早班'] = [];
+          employeeArrange2['中班'] = [];
+          employeeArrange2['晚班'] = [];
+          employeeArrange2['通班'] = [];
         });
       }else{
         getArrangeInfo();
@@ -59,12 +66,17 @@ class _ArrangeTypeState extends State<ArrangeType> {
     }); 
   }
   getArrangeInfo(){
-    HttpService.get(Api.arrangeInfo+'1', context ,params: {'signDate':widget.dateTimes.first.toString().substring(0,19)}).then((res){
+    HttpService.get(Api.arrangeInfo+widget.companyId.toString(), context ,params: {'signDate':widget.dateTimes.first.toString().substring(0,19)}).then((res){
       (res['data'] as Map).forEach((k,v) {
         if(v.length != 0){
           setState(() {
             if(k == '0'){
               employeeArrange['早班'] = v;
+              List list = [];
+              for(var x in v){
+                list.add(x);
+              }
+              employeeArrange2['早班'] = list;
               for(var x in widget.typeList){
                 if(x['type'] == '早班'){
                   x['select'].text = DateTime.parse(v[0]['upWork'].toString()).toString().substring(11,16) + '-' + DateTime.parse(v[0]['downWork'].toString()).toString().substring(11,16);
@@ -73,6 +85,11 @@ class _ArrangeTypeState extends State<ArrangeType> {
             }
             if(k == '1'){
               employeeArrange['中班'] = v;
+              List list = [];
+              for(var x in v){
+                list.add(x);
+              }
+              employeeArrange2['中班'] = list;
               for(var x in widget.typeList){
                 if(x['type'] == '中班'){
                   x['select'].text = DateTime.parse(v[0]['upWork'].toString()).toString().substring(11,16) + '-' + DateTime.parse(v[0]['downWork'].toString()).toString().substring(11,16);
@@ -81,6 +98,11 @@ class _ArrangeTypeState extends State<ArrangeType> {
             }
             if(k == '2'){
               employeeArrange['晚班'] = v;
+              List list = [];
+              for(var x in v){
+                list.add(x);
+              }
+              employeeArrange2['晚班'] = list;
               for(var x in widget.typeList){
                 if(x['type'] == '晚班'){
                   x['select'].text = DateTime.parse(v[0]['upWork'].toString()).toString().substring(11,16) + '-' + DateTime.parse(v[0]['downWork'].toString()).toString().substring(11,16);
@@ -89,6 +111,11 @@ class _ArrangeTypeState extends State<ArrangeType> {
             }
             if(k == '3'){
               employeeArrange['通班'] = v;
+              List list = [];
+              for(var x in v){
+                list.add(x);
+              }
+              employeeArrange2['通班'] = list;
               for(var x in widget.typeList){
                 if(x['type'] == '通班'){
                   x['select'].text = DateTime.parse(v[0]['upWork'].toString()).toString().substring(11,16) + '-' + DateTime.parse(v[0]['downWork'].toString()).toString().substring(11,16);
@@ -120,17 +147,33 @@ class _ArrangeTypeState extends State<ArrangeType> {
                   List employeeList = employeeArrange[v['type']];
                   String signDate = widget.dateTimes.first.toString().substring(0,19);
                   String deadDate = widget.dateTimes.last.toString().substring(0,19);
+                  List cancelList = [];
+                  for(var x in (employeeArrange2[v['type']] as List)){
+                    cancelList.add(x);
+                  }
+                  List employeeList2 = [];
+                  for(var x in (employeeArrange2[v['type']] as List)){
+                    employeeList2.add(x);
+                  }
+                  for(var x in employeeList){
+                    for(var y in employeeList2){
+                      if(x['id'] == y['id']){
+                        cancelList.remove(x);
+                      }
+                    }
+                  }
                   arrangeDTOList.add({
                     'arrangeType':arrangeType,
                     'upAndDownTime':upAndDownTime,
                     'employeeList':employeeList,
                     'signDate':signDate,
+                    'cancelList':cancelList,
                     'deadDate':deadDate
                   });
                 }
               }
               params['arrangeDTOList'] = arrangeDTOList;
-              params['companyId'] = 1;
+              params['companyId'] = widget.companyId;
               HttpService.post(Api.arrangeSet, context,params: params,showLoading: true).then((res){
                 var rs =convert.json.decode(res.toString());
                 if(rs['data']){

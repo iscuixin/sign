@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myh_shop/app/main/clock/boss/boss_clock.dart';
 import 'package:myh_shop/common.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:myh_shop/widget/MyButton.dart';
@@ -245,6 +246,7 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
     if (rs['code'] == 1) {
       save('loginData', toString(rs['info']));
       userModel.loginData = rs['info'];
+      CompanyInfo.getInfo(context);
       jump(context, 'bottom_bar');
     }
   }
